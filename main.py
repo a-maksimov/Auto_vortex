@@ -4,14 +4,12 @@ Created on Oct 20, 2022
 
 @author:
 """
+import os
 from datetime import time
-
 import telebot
 from telegram_bot_calendar import WYearTelegramCalendar
 import config
-# import csv
-# import time
-# import datetime
+from flask import Flask, request
 # import logging
 
 # bot plugins
@@ -53,8 +51,9 @@ def listener(messages):
 
 
 bot = telebot.TeleBot(config.token)
-bot.remove_webhook()
 bot.set_update_listener(listener)  # register listener
+
+server = Flask(__name__)
 
 
 # handle the "/start" command
@@ -134,22 +133,19 @@ def set_ro(message):
     bot.restrict_chat_member(message.chat.id, message.from_user.id, until_date=time.time() + 31)
 
 
-bot.infinity_polling()
+# redirecting messages from Flask server to the bot
+@server.route(f'/{config.token}', methods=['POST'])
+def redirect_message():
+    json_string = request.get_data().decode('utf-8')
+    update = telebot.types.Update.de_json(json_string)
+    bot.process_new_updates([update])
+    return '!', 200
 
-# def telegram_polling():
-#     """
-#     https://github.com/eternnoir/pyTelegramBotAPI/issues/206
-#     https://github.com/eternnoir/pyTelegramBotAPI/issues/401
-#     """
-#     try:
-#         bot.polling(none_stop=True, timeout=100)  # constantly get messages from Telegram
-#     except Exception as err:
-#         logging.error(err)
-#         bot.stop_polling()
-#         print("Internet error!")
-#         time.sleep(10)
-#         telegram_polling()
-#
-#
-# if __name__ == '__main__':
-#     telegram_polling()
+
+# remove existing webhook and set a new one
+# run Flask server
+if __name__ == '__main__':
+    # bot.infinity_polling()
+    bot.remove_webhook()
+    bot.set_webhook(url=config.app_url)
+    server.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
