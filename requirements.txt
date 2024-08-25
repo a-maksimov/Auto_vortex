@@ -2,7 +2,7 @@ certifi==2024.7.4
 charset-normalizer==2.1.1
 flake8==5.0.4
 future==0.18.3
-idna==3.4
+idna==3.7
 mccabe==0.7.0
 oauthlib==3.2.2
 pycodestyle==2.9.1
